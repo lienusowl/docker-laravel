@@ -1,0 +1,55 @@
+version: '3'
+services:
+    web:
+        image: nginx:alpine
+        volumes:
+            - "./etc/nginx/default.conf:/etc/nginx/conf.d/default.conf"
+            - "./etc/ssl:/etc/ssl"
+            - "./web:/var/www/html"
+            - "./etc/nginx/default.template.conf:/etc/nginx/conf.d/default.template"
+        ports:
+            - "80:80"
+            - "3000:443"
+        environment:
+            - NGINX_HOST=192.168.99.100
+        command: /bin/sh -c "envsubst '$$NGINX_HOST' < /etc/nginx/conf.d/default.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+        restart: always
+        links:
+            - php
+            - mysql2
+            - redis2
+    php:
+        image: nanoninja/php-fpm:latest
+        restart: always
+        volumes:
+            - "./etc/php/php.ini:/usr/local/etc/php/conf.d/php.ini"
+            - "./web:/var/www/html"
+    myadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: phpmyadmin
+        ports:
+            - "8080:80"
+        environment:
+            - PMA_ARBITRARY=1
+            - PMA_HOST=mysql2
+        restart: always
+        links:
+            - mysql2
+    mysql2:
+      image: mysql:5.7
+      container_name: '5.7-mysql2'
+      restart: 'always'
+      command: "--innodb_use_native_aio=0 --explicit_defaults_for_timestamp"
+      ports:
+        - "3306:3306"
+      volumes:
+        - ./data/mysql:/var/lib/mysql
+        - ./logs/mysql:/var/log/mysql
+        - ./data/dumps:/var/backup
+      environment:
+        MYSQL_ROOT_PASSWORD: tiger
+    redis2:
+      container_name: 'sc-redis2'
+      image: redis:latest
+      ports:
+        - "6379:6379"
