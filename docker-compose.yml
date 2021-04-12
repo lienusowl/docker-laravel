@@ -36,6 +36,7 @@ services:
         links:
             - mysql2
     mysql2:
+      platform: linux/x86_64
       image: mysql:5.7
       container_name: '5.7-mysql2'
       restart: 'always'
